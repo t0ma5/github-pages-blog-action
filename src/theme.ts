@@ -63,6 +63,23 @@ export function parseJsonc<T = unknown>(text: string): T {
   return JSON.parse(stripped) as T;
 }
 
+export function quoteUnsafeYamlScalars(frontmatter: string): string {
+  return frontmatter.replace(/^([A-Za-z0-9_-]+):\s*(.+)$/gm, (line, key, value) => {
+    const trimmed = value.trim();
+    if (
+      (trimmed.startsWith('"') && trimmed.endsWith('"')) ||
+      (trimmed.startsWith("'") && trimmed.endsWith("'")) ||
+      /^(true|false|null|\d+(\.\d+)?)$/i.test(trimmed)
+    ) {
+      return line;
+    }
+    if (/[:#{}[\],&*?|>!%@`]/.test(trimmed)) {
+      return `${key}: "${trimmed.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`;
+    }
+    return line;
+  });
+}
+
 export function startOfTodayUtc(): number {
   const now = new Date();
   return Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
@@ -147,7 +164,7 @@ export async function prepareTheme(configuration: ConfigurationType): Promise<vo
   const siteConfigRaw = fs.readFileSync(path.join(repoPath, 'site.json'), 'utf8');
   const siteConfig = parseJsonc<SiteConfigType>(siteConfigRaw);
   siteConfig.url = resolveSiteUrl(siteConfig);
-  siteConfig.baseUrl = siteConfig.baseUrl || '';
+  siteConfig.baseUrl = (siteConfig.baseUrl || '').replace(/\/$/, '');
   siteConfig.seo = siteConfig.seo || {
     title: siteConfig.title,
     description: siteConfig.subtitle || '',
@@ -194,7 +211,10 @@ export async function prepareTheme(configuration: ConfigurationType): Promise<vo
       }
 
       const content = fs.readFileSync(contentFilePath, 'utf8');
-      const parsed = fm(content) as FrontMatterResult<FrontMatterType>;
+      const normalized = content.replace(/^---\r?\n([\s\S]*?)\r?\n---/, (_, fmBlock) => {
+        return `---\n${quoteUnsafeYamlScalars(fmBlock)}\n---`;
+      });
+      const parsed = fm(normalized) as FrontMatterResult<FrontMatterType>;
       const attributes = (parsed.attributes || {}) as FrontMatterType;
 
       if (!shouldPublishPost(attributes, contentFile)) {

@@ -6,6 +6,6 @@
 </header>
 
 <p>Check the URL, or go back to the homepage and find another post.</p>
-<p><a href="/">← Back to Home</a></p>
+<p><a href="<%- `${siteConfig.baseUrl || ''}/` %>">← Back to Home</a></p>
 
 <%- include('_includes/footer', { siteConfig }) %>

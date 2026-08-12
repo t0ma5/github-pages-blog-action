@@ -269,7 +269,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.prepareTheme = exports.sortPostsByDateDesc = exports.shouldPublishPost = exports.isDraft = exports.isFutureDate = exports.startOfTodayUtc = exports.parseJsonc = void 0;
+exports.prepareTheme = exports.sortPostsByDateDesc = exports.shouldPublishPost = exports.isDraft = exports.isFutureDate = exports.startOfTodayUtc = exports.quoteUnsafeYamlScalars = exports.parseJsonc = void 0;
 const ejs_1 = __importDefault(__nccwpck_require__(8431));
 const dayjs_1 = __importDefault(__nccwpck_require__(7401));
 const slugify_1 = __importDefault(__nccwpck_require__(9481));
@@ -287,6 +287,21 @@ function parseJsonc(text) {
     return JSON.parse(stripped);
 }
 exports.parseJsonc = parseJsonc;
+function quoteUnsafeYamlScalars(frontmatter) {
+    return frontmatter.replace(/^([A-Za-z0-9_-]+):\s*(.+)$/gm, (line, key, value) => {
+        const trimmed = value.trim();
+        if ((trimmed.startsWith('"') && trimmed.endsWith('"')) ||
+            (trimmed.startsWith("'") && trimmed.endsWith("'")) ||
+            /^(true|false|null|\d+(\.\d+)?)$/i.test(trimmed)) {
+            return line;
+        }
+        if (/[:#{}[\],&*?|>!%@`]/.test(trimmed)) {
+            return `${key}: "${trimmed.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`;
+        }
+        return line;
+    });
+}
+exports.quoteUnsafeYamlScalars = quoteUnsafeYamlScalars;
 function startOfTodayUtc() {
     const now = new Date();
     return Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
@@ -375,7 +390,7 @@ function prepareTheme(configuration) {
         const siteConfigRaw = fs_1.default.readFileSync(path_1.default.join(repoPath, 'site.json'), 'utf8');
         const siteConfig = parseJsonc(siteConfigRaw);
         siteConfig.url = resolveSiteUrl(siteConfig);
-        siteConfig.baseUrl = siteConfig.baseUrl || '';
+        siteConfig.baseUrl = (siteConfig.baseUrl || '').replace(/\/$/, '');
         siteConfig.seo = siteConfig.seo || {
             title: siteConfig.title,
             description: siteConfig.subtitle || '',
@@ -418,7 +433,10 @@ function prepareTheme(configuration) {
                         continue;
                     }
                     const content = fs_1.default.readFileSync(contentFilePath, 'utf8');
-                    const parsed = (0, front_matter_1.default)(content);
+                    const normalized = content.replace(/^---\r?\n([\s\S]*?)\r?\n---/, (_, fmBlock) => {
+                        return `---\n${quoteUnsafeYamlScalars(fmBlock)}\n---`;
+                    });
+                    const parsed = (0, front_matter_1.default)(normalized);
                     const attributes = (parsed.attributes || {});
                     if (!shouldPublishPost(attributes, contentFile)) {
                         (0, core_1.info)(`Skipping unpublished post: ${contentFile}`);

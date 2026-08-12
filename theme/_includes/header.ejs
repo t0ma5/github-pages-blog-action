@@ -24,8 +24,8 @@
     <meta name="twitter:card" content="summary_large_image"/>
     <meta name="twitter:title" content="<%- typeof post !== 'undefined' ? post.title : (siteConfig.seo?.title || siteConfig.title) %>"/>
     <meta name="twitter:description" content="<%- typeof post !== 'undefined' && post.description ? post.description : (siteConfig.seo?.description || '') %>"/>
-    <link rel="icon" href="<%- siteConfig.favicon || '/favicon.svg' %>" type="image/svg+xml"/>
-    <link rel="alternate icon" href="/favicon.png"/>
+    <link rel="icon" href="<%- `${siteConfig.baseUrl || ''}${siteConfig.favicon || '/favicon.svg'}` %>" type="image/svg+xml"/>
+    <link rel="alternate icon" href="<%- `${siteConfig.baseUrl || ''}/favicon.png` %>"/>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
     <link rel="stylesheet" href="<%- `${siteConfig.baseUrl || ''}/` %>css/normalize.css"/>
@@ -34,8 +34,8 @@
 <body id="top">
 <nav class="nav">
     <div class="nav__left">
-        <a href="/">Home</a>
-        <a href="/about.html">About</a>
+        <a href="<%- `${siteConfig.baseUrl || ''}/` %>">Home</a>
+        <a href="<%- `${siteConfig.baseUrl || ''}/about.html` %>">About</a>
     </div>
     <div class="nav__center"></div>
     <div class="nav__right"></div>
