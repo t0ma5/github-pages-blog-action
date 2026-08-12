@@ -137,6 +137,7 @@
 
 html {
   scroll-behavior: smooth;
+  font-size: calc(17px * var(--font-scale, 1));
   background:
     radial-gradient(ellipse 70% 40% at 50% -30%, rgba(232, 165, 75, 0.035), transparent 70%),
     linear-gradient(180deg, #141210 0%, var(--bg) 28%);
@@ -150,7 +151,7 @@ body {
   background: transparent;
   color: var(--ink);
   font-family: "IBM Plex Sans", -apple-system, BlinkMacSystemFont, sans-serif;
-  font-size: calc(17px * var(--font-scale));
+  font-size: 1rem;
   line-height: 1.55;
 }
 
