@@ -1,6 +1,6 @@
 # github-pages-blog-action
 
-Fork of [nilbuild/github-pages-blog-action](https://github.com/nilbuild/github-pages-blog-action) maintained for [blogMD](https://github.com/t0ma5/blogMD).
+Fork of [nilbuild/github-pages-blog-action](https://github.com/nilbuild/github-pages-blog-action) maintained for blogMD. Read more on the [live blog](https://t0ma5.github.io/how-this-blog-works.html).
 
 Builds a static markdown blog and deploys it to GitHub Pages.
 
