@@ -1,118 +1,70 @@
-<p align="center">
-  <img height="150" src="./.github/assets/flash.png" />
-  <h2 align="center">Github Pages Blog</h2>
-  <p align="center">Create good looking blog from your markdown files on GitHub<p>
-  <p align="center">
-    <a href="https://kamranahmed.info">
-    	<img src="https://img.shields.io/badge/-Visit%20Sample%20Blog%20‎ ‎ -teal.svg?style=flat&colorA=teal" alt="kamranahmed.info" />
-    </a>
-    <a href="license">
-    	<img src="https://img.shields.io/badge/License-MIT-0a0a0a.svg?style=flat&colorA=0a0a0a" alt="license mit" />
-    </a>
-  </p>
-</p>
+# github-pages-blog-action
 
-<br>
+Fork of [nilbuild/github-pages-blog-action](https://github.com/nilbuild/github-pages-blog-action) maintained for [blogMD](https://github.com/t0ma5/blogMD).
 
-## Usage Example
+Builds a static markdown blog and deploys it to GitHub Pages.
 
-* [Codebase](https://github.com/kamranahmedse/kamranahmedse.github.io)
-* [Live Blog](https://kamranahmed.info)
+## Features
 
+- Markdown posts with frontmatter (`title`, `date`, `permalink`, `draft`, `description`)
+- **Scheduled posts** — future `date` values are skipped until that UTC day
+- **Drafts** — `draft: true` or `_filename.md` are never published
+- Tolerant `site.json` (comments + trailing commas)
+- GFM-friendly markdown (tables, task lists, strikethrough, autolinks)
+- Amber dark theme by default (zoom + share controls)
+- Date rendered under the post title
+- Favicon + Open Graph / Twitter meta from `site.json`
+- Canonical URLs + `sitemap.xml` when `url` or `cname` is set
+- Optional custom theme via `theme_dir` input or a content-repo `theme/` folder
+- Revue newsletter removed (optional `newsletterHtml` if you need a custom block)
+- Runs on **Node 20**
 
-## Setting Up the Blog
+## Usage
 
-Create a repository on GitHub to hold your blog content with the following directory structure:
-
-```shell
-├── about.md
-├── posts
-  ├── art-of-getting-better.md
-  ├── behavior-of-links-created-using-javascript.md
-  └── yellow-fade-technique-in-css.md
-├── site.json
-└── static
-    ├── resume.pdf
-    └── ebook.pdf
+```yaml
+- uses: t0ma5/github-pages-blog-action@v0.1.0
+  with:
+    branch: gh-pages
+    # theme_dir: theme   # optional custom theme in the content repo
 ```
 
-### About Page
-`about.md` is the markdown file containing the content for your about page.
+## Frontmatter
 
-### Blog Posts
-`posts/` is the directory containing all your blog posts in markdown format. It supports the following frontmatter on top of each of the blog post
-
-```shell
+```md
 ---
-title: Your Personal Blog on GitHub Pages
-date: 2022-05-25
-permalink: /personal-blog-ghpages
+title: "My post"
+date: 2026-09-01
+permalink: /my-post
+draft: false
+description: "Optional excerpt for SEO/social"
 ---
-
-Content for your bog post
 ```
 
-Where `title` is the blog post title shown on the homepage as well as on the post detail page. `date` is the blog post date. `permalink` is the optional parameter to let you override the slug of the blog post.
-
-### Site Configuration
-
-`site.json` contains the configuration to setup the blog. Given below is the sample JSON configuration.
+## site.json
 
 ```json
 {
-  "title": "Kamran Ahmed",
-  "subtitle": "Lead engineer at Zalando — tech guy with an entrepreneurial spirit and knack for getting things done",
-  "owner": {
-    "name": "Kamran Ahmed",
-    "email": "kamranahmed.se@gmail.com"
-  },
-  "social": {
-    "github": "kamranahmedse",
-    "medium": "kamranahmedse",
-    "twitter": "kamranahmedse"
-  },
-  "newsletter": {
-    "currentCount": "2,000",
-    "revueUsername": "roadmapsh"
-  },
+  "title": "blogMD",
+  "subtitle": "Notes",
+  "url": "https://t0ma5.github.io",
+  "owner": { "name": "t0+" },
+  "social": { "github": "t0ma5" },
   "seo": {
-    "title": "Kamran Ahmed",
-    "description": "Blog of a Software Engineer",
-    "author": "Kamran Ahmed",
-    "keywords": [
-      "blog",
-      "developer blog",
-      "engineering blog"
-    ]
+    "title": "blogMD",
+    "description": "Random things I find interesting",
+    "keywords": ["blog", "markdown"]
   },
-  "cname": "kamranahmed.info"
+  "favicon": "/favicon.svg",
+  "ogImage": "/og.png",
+  "cname": "t0ma5.github.io"
 }
 ```
 
-For the `newsletter`, you can remove the object if you don't have [revue newsletter](https://www.getrevue.co/). And `cname` is your personal domain if applicable.
+## Develop
 
-### Static Assets
-
-The contents of the `static` folder will simply be copied at the root of your blog and will be accessible via `http://[blogurl]/filename`
-
-![](./.github/assets/split.png)
-
-## Setting Up GitHub Action
-
-Once you have the blog repository setup, you need to setup the GitHub action in your repository. Create the action file at `.github/workflows/deploy.yml` with the following content
-
-```yaml
-name: Build and Deploy
-on: [push]
-jobs:
-  build-and-deploy:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-
-      - name: Deploy
-        uses: kamranahmedse/github-pages-blog-action@v0.0.10
-        with:
-          branch: gh-pages # Optional branch for GitHub Pages
+```bash
+npm install
+npm run all   # build + package + test
 ```
+
+Tag releases after packaging so consumers can pin versions (`v0.1.0`, …).

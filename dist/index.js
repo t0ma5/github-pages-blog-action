@@ -184,21 +184,30 @@ const github = __importStar(__nccwpck_require__(5438));
 const { pusher, repository } = github.context.payload;
 const token = (0, core_1.getInput)('token') || process.env.GITHUB_TOKEN || '';
 const branch = (0, core_1.getInput)('branch') || 'gh-pages';
+const themeDirInput = (0, core_1.getInput)('theme_dir') || '';
 const hostname = 'github.com';
 const repositoryName = (repository === null || repository === void 0 ? void 0 : repository.full_name) || process.env.GITHUB_REPOSITORY || '';
 const repoPath = process.env.GITHUB_WORKSPACE || path_1.default.join(__dirname, '../');
 const outputDir = path_1.default.join(repoPath, 'output');
+const bundledTheme = path_1.default.join(__dirname, '../theme');
+const themeDir = themeDirInput
+    ? path_1.default.isAbsolute(themeDirInput)
+        ? themeDirInput
+        : path_1.default.join(repoPath, themeDirInput)
+    : bundledTheme;
 (0, runner_1.run)({
     token,
-    pusherName: (pusher === null || pusher === void 0 ? void 0 : pusher.name) || process.env.GITHUB_PUSHER_NAME,
-    pusherEmail: (pusher === null || pusher === void 0 ? void 0 : pusher.email) || process.env.GITHUB_PUSHER_EMAIL,
+    pusherName: (pusher === null || pusher === void 0 ? void 0 : pusher.name) || process.env.GITHUB_PUSHER_NAME || 'github-actions[bot]',
+    pusherEmail: (pusher === null || pusher === void 0 ? void 0 : pusher.email) ||
+        process.env.GITHUB_PUSHER_EMAIL ||
+        '41898282+github-actions[bot]@users.noreply.github.com',
     repositoryName,
     hostname,
-    repoPath: repoPath,
+    repoPath,
     repoUrl: `https://x-access-token:${token}@${hostname}/${repositoryName}.git`,
-    outputDir: outputDir,
+    outputDir,
     branch,
-    themeDir: path_1.default.join(__dirname, '../theme')
+    themeDir
 });
 
 
@@ -260,7 +269,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.prepareTheme = void 0;
+exports.prepareTheme = exports.sortPostsByDateDesc = exports.shouldPublishPost = exports.isDraft = exports.isFutureDate = exports.startOfTodayUtc = exports.parseJsonc = void 0;
 const ejs_1 = __importDefault(__nccwpck_require__(8431));
 const dayjs_1 = __importDefault(__nccwpck_require__(7401));
 const slugify_1 = __importDefault(__nccwpck_require__(9481));
@@ -270,14 +279,111 @@ const path_1 = __importDefault(__nccwpck_require__(1017));
 const fs_extra_1 = __importDefault(__nccwpck_require__(5630));
 const fs_1 = __importDefault(__nccwpck_require__(7147));
 const core_1 = __nccwpck_require__(2186);
-const htmlConverter = new showdown_1.default.Converter();
+function parseJsonc(text) {
+    const stripped = text
+        .replace(/\/\*[\s\S]*?\*\//g, '')
+        .replace(/^\s*\/\/.*$/gm, '')
+        .replace(/,\s*([}\]])/g, '$1');
+    return JSON.parse(stripped);
+}
+exports.parseJsonc = parseJsonc;
+function startOfTodayUtc() {
+    const now = new Date();
+    return Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
+}
+exports.startOfTodayUtc = startOfTodayUtc;
+function isFutureDate(value) {
+    if (!value)
+        return false;
+    const d = (0, dayjs_1.default)(value);
+    if (!d.isValid())
+        return false;
+    const postDay = Date.UTC(d.year(), d.month(), d.date());
+    return postDay > startOfTodayUtc();
+}
+exports.isFutureDate = isFutureDate;
+function isDraft(attributes, fileName) {
+    if (fileName.startsWith('_'))
+        return true;
+    const draft = attributes.draft;
+    if (draft === true || draft === 'true' || draft === 'yes')
+        return true;
+    return false;
+}
+exports.isDraft = isDraft;
+function shouldPublishPost(attributes, fileName) {
+    if (!fileName.endsWith('.md'))
+        return false;
+    if (isDraft(attributes, fileName))
+        return false;
+    if (isFutureDate(attributes.date))
+        return false;
+    return true;
+}
+exports.shouldPublishPost = shouldPublishPost;
+function sortPostsByDateDesc(posts) {
+    posts.sort((a, b) => b.sortValue - a.sortValue);
+}
+exports.sortPostsByDateDesc = sortPostsByDateDesc;
+function createMarkdownConverter() {
+    return new showdown_1.default.Converter({
+        tables: true,
+        strikethrough: true,
+        tasklists: true,
+        ghCompatibleHeaderId: true,
+        simplifiedAutoLink: true,
+        literalMidWordUnderscores: true,
+        ghCodeBlocks: true,
+        emoji: true,
+        openLinksInNewWindow: false,
+        encodeEmails: false
+    });
+}
+function excerptFromMarkdown(body, fallback = '') {
+    const text = body
+        .replace(/```[\s\S]*?```/g, ' ')
+        .replace(/[#>*_`\[\]!()\-]/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+    return (text || fallback).slice(0, 160);
+}
+function resolveSiteUrl(siteConfig) {
+    if (siteConfig.url)
+        return siteConfig.url.replace(/\/$/, '');
+    if (siteConfig.cname)
+        return `https://${siteConfig.cname.replace(/\/$/, '')}`;
+    return '';
+}
+function resolveThemePath(configuration) {
+    if (configuration.themeDir && fs_1.default.existsSync(configuration.themeDir)) {
+        return configuration.themeDir;
+    }
+    const contentTheme = path_1.default.join(configuration.repoPath, 'theme');
+    if (fs_1.default.existsSync(contentTheme) && fs_1.default.existsSync(path_1.default.join(contentTheme, 'index.ejs'))) {
+        (0, core_1.info)(`Using content-repo theme at ${contentTheme}`);
+        return contentTheme;
+    }
+    return path_1.default.join(__dirname, '../theme');
+}
 function prepareTheme(configuration) {
+    var _a;
     return __awaiter(this, void 0, void 0, function* () {
         const outputDir = configuration.outputDir;
         const repoPath = configuration.repoPath;
-        const siteConfig = require(path_1.default.join(configuration.repoPath, './site.json'));
-        const postsDir = path_1.default.join(configuration.repoPath, './posts');
-        const themePath = path_1.default.join(__dirname, '../theme');
+        const themePath = resolveThemePath(configuration);
+        const htmlConverter = createMarkdownConverter();
+        const siteConfigRaw = fs_1.default.readFileSync(path_1.default.join(repoPath, 'site.json'), 'utf8');
+        const siteConfig = parseJsonc(siteConfigRaw);
+        siteConfig.url = resolveSiteUrl(siteConfig);
+        siteConfig.baseUrl = siteConfig.baseUrl || '';
+        siteConfig.seo = siteConfig.seo || {
+            title: siteConfig.title,
+            description: siteConfig.subtitle || '',
+            author: ((_a = siteConfig.owner) === null || _a === void 0 ? void 0 : _a.name) || '',
+            keywords: []
+        };
+        siteConfig.favicon = siteConfig.favicon || '/favicon.svg';
+        siteConfig.ogImage = siteConfig.ogImage || '/og.png';
         function prepareThemeFiles() {
             return __awaiter(this, void 0, void 0, function* () {
                 (0, core_1.info)('Preparing theme files');
@@ -292,26 +398,40 @@ function prepareTheme(configuration) {
                 if (siteConfig.cname) {
                     fs_1.default.writeFileSync(path_1.default.join(outputDir, 'CNAME'), siteConfig.cname);
                 }
-                // Create the file to bypass jekyll execution by github pages
                 fs_1.default.writeFileSync(path_1.default.join(outputDir, '.nojekyll'), '');
             });
         }
         function prepareBlogPosts() {
+            var _a;
             return __awaiter(this, void 0, void 0, function* () {
                 (0, core_1.info)('Preparing blog posts');
+                const postsDir = path_1.default.join(repoPath, './posts');
+                if (!fs_1.default.existsSync(postsDir)) {
+                    (0, core_1.warning)('No posts/ directory found');
+                    return [];
+                }
                 const postFiles = fs_1.default.readdirSync(postsDir);
                 const posts = [];
-                for (let contentFile of postFiles) {
+                for (const contentFile of postFiles) {
                     const contentFilePath = path_1.default.join(postsDir, contentFile);
-                    const content = fs_1.default.readFileSync(contentFilePath, 'utf-8');
+                    if (!fs_1.default.statSync(contentFilePath).isFile() || !contentFile.endsWith('.md')) {
+                        continue;
+                    }
+                    const content = fs_1.default.readFileSync(contentFilePath, 'utf8');
                     const parsed = (0, front_matter_1.default)(content);
-                    let { title, date, permalink, externalUrl } = parsed.attributes;
-                    if (!date) {
-                        date = (0, dayjs_1.default)().format('ddd, MMMM DD, YYYY');
+                    const attributes = (parsed.attributes || {});
+                    if (!shouldPublishPost(attributes, contentFile)) {
+                        (0, core_1.info)(`Skipping unpublished post: ${contentFile}`);
+                        continue;
                     }
-                    else {
-                        date = (0, dayjs_1.default)(date).format('ddd, MMMM DD, YYYY');
-                    }
+                    let { title, date, permalink, externalUrl, description } = attributes;
+                    title = title || path_1.default.basename(contentFile, '.md');
+                    const dateRaw = date || (0, dayjs_1.default)().format('YYYY-MM-DD');
+                    const parsedDate = (0, dayjs_1.default)(dateRaw);
+                    const displayDate = parsedDate.isValid()
+                        ? parsedDate.format('ddd, MMMM DD, YYYY')
+                        : (0, dayjs_1.default)().format('ddd, MMMM DD, YYYY');
+                    const sortValue = parsedDate.isValid() ? parsedDate.valueOf() : Date.now();
                     const postHtml = htmlConverter.makeHtml(parsed.body);
                     const fullFileName = (permalink || (0, slugify_1.default)(title).toLowerCase()).replace(/^\//, '');
                     const fullFileNameParts = fullFileName.replace(/\/$/, '').split('/');
@@ -322,13 +442,15 @@ function prepareTheme(configuration) {
                     }
                     const postMeta = {
                         title,
-                        date,
-                        permalink: path_1.default.join('/', nestedPostDir, fileName),
+                        date: displayDate,
+                        dateRaw,
+                        sortValue,
+                        permalink: path_1.default.posix.join('/', nestedPostDir, fileName),
                         externalUrl,
-                        html: postHtml
+                        html: postHtml,
+                        description: description || excerptFromMarkdown(parsed.body, ((_a = siteConfig.seo) === null || _a === void 0 ? void 0 : _a.description) || '')
                     };
-                    const postFileTemplate = path_1.default.join(themePath, 'post.ejs');
-                    const populatedTemplate = yield ejs_1.default.renderFile(postFileTemplate, {
+                    const populatedTemplate = yield ejs_1.default.renderFile(path_1.default.join(themePath, 'post.ejs'), {
                         post: postMeta,
                         siteConfig
                     });
@@ -341,7 +463,8 @@ function prepareTheme(configuration) {
         function prepareAbout() {
             return __awaiter(this, void 0, void 0, function* () {
                 (0, core_1.info)('Preparing about page');
-                const aboutContent = fs_1.default.readFileSync(path_1.default.join(repoPath, 'about.md'), 'utf-8');
+                const aboutPath = path_1.default.join(repoPath, 'about.md');
+                const aboutContent = fs_1.default.existsSync(aboutPath) ? fs_1.default.readFileSync(aboutPath, 'utf8') : '';
                 const html = htmlConverter.makeHtml(aboutContent);
                 const populatedTemplate = yield ejs_1.default.renderFile(path_1.default.join(themePath, 'about.ejs'), {
                     siteConfig,
@@ -360,9 +483,11 @@ function prepareTheme(configuration) {
         function prepareHome(posts) {
             return __awaiter(this, void 0, void 0, function* () {
                 (0, core_1.info)('Preparing homepage');
-                posts.sort((a, b) => (0, dayjs_1.default)(b.date).date() - (0, dayjs_1.default)(a.date).date());
+                sortPostsByDateDesc(posts);
                 const groupedPosts = posts.reduce((aggMap, postItem) => {
-                    const year = (0, dayjs_1.default)(postItem.date).format('YYYY');
+                    const year = (0, dayjs_1.default)(postItem.dateRaw).isValid()
+                        ? (0, dayjs_1.default)(postItem.dateRaw).format('YYYY')
+                        : (0, dayjs_1.default)(postItem.date).format('YYYY');
                     aggMap.set(year, [...(aggMap.get(year) || []), postItem]);
                     return aggMap;
                 }, new Map());
@@ -373,14 +498,42 @@ function prepareTheme(configuration) {
                 fs_1.default.writeFileSync(path_1.default.join(outputDir, 'index.html'), homeHtml);
             });
         }
+        function prepareSitemap(posts) {
+            return __awaiter(this, void 0, void 0, function* () {
+                (0, core_1.info)('Preparing sitemap');
+                const siteUrl = siteConfig.url;
+                if (!siteUrl) {
+                    (0, core_1.warning)('No site url/cname set — skipping sitemap.xml');
+                    return;
+                }
+                const urls = [
+                    { loc: `${siteUrl}/`, priority: '1.0' },
+                    { loc: `${siteUrl}/about.html`, priority: '0.6' },
+                    ...posts.map(post => ({
+                        loc: `${siteUrl}${post.permalink}.html`,
+                        priority: '0.8',
+                        lastmod: (0, dayjs_1.default)(post.dateRaw).isValid() ? (0, dayjs_1.default)(post.dateRaw).format('YYYY-MM-DD') : undefined
+                    }))
+                ];
+                const body = urls
+                    .map(entry => {
+                    const lastmod = entry.lastmod ? `\n    <lastmod>${entry.lastmod}</lastmod>` : '';
+                    return `  <url>\n    <loc>${entry.loc}</loc>${lastmod}\n    <priority>${entry.priority}</priority>\n  </url>`;
+                })
+                    .join('\n');
+                const xml = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${body}\n</urlset>\n`;
+                fs_1.default.writeFileSync(path_1.default.join(outputDir, 'sitemap.xml'), xml);
+            });
+        }
         function copyStaticAssets() {
             return __awaiter(this, void 0, void 0, function* () {
                 (0, core_1.info)('Copying static assets');
                 const staticAssetsPath = path_1.default.join(repoPath, 'static');
-                fs_extra_1.default.copySync(staticAssetsPath, outputDir);
+                if (fs_1.default.existsSync(staticAssetsPath)) {
+                    fs_extra_1.default.copySync(staticAssetsPath, outputDir);
+                }
             });
         }
-        // Remove and recreate the output directory
         fs_extra_1.default.removeSync(configuration.outputDir);
         fs_extra_1.default.ensureDirSync(configuration.outputDir);
         yield prepareThemeFiles();
@@ -388,6 +541,7 @@ function prepareTheme(configuration) {
         yield prepareStaticPages();
         const posts = yield prepareBlogPosts();
         yield prepareHome(posts);
+        yield prepareSitemap(posts);
         yield copyStaticAssets();
     });
 }

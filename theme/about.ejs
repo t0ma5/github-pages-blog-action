@@ -1,37 +1,33 @@
 <%- include('_includes/header', { siteConfig }); -%>
 
 <div class="about__content pad-0">
-    <h1><%- siteConfig.owner.name %></h1>
-    <p class="about__head"></p>
+    <h1><%- siteConfig.owner?.name || siteConfig.title %></h1>
     <div class="about__description">
         <%- html %>
     </div>
 </div>
 
+<%
+  const social = siteConfig.social || {};
+  const links = [];
+  if (social.github) links.push({ label: 'GitHub', href: `https://github.com/${social.github}`, meta: social.github, className: 'link-github' });
+  if (social.medium) links.push({ label: 'Medium', href: `https://medium.com/@${social.medium}`, meta: social.medium, className: 'link-medium' });
+  if (social.twitter) links.push({ label: 'Twitter', href: `https://twitter.com/${social.twitter}`, meta: social.twitter, className: 'link-twitter' });
+  if (siteConfig.owner?.email) links.push({ label: 'Email', href: `mailto:${siteConfig.owner.email}`, meta: siteConfig.owner.email, className: 'link-email' });
+%>
+
+<% if (links.length) { %>
 <section id="contact" class="mar-b-7">
     <h3 class="section__title">Elsewhere</h3>
     <div class="post-list">
-        <a target="_blank" class="post link-github" href="https://github.com/<%- siteConfig.social.github %>">
-            <span class="post__title">Github</span>
-            <span class="post__date"><%- siteConfig.social.github %></span>
+        <% for (const link of links) { %>
+        <a target="_blank" rel="noopener" class="post <%- link.className %>" href="<%- link.href %>">
+            <span class="post__title"><%- link.label %></span>
+            <span class="post__date"><%- link.meta %></span>
         </a>
-
-        <a target="_blank" class="post link-medium" href="https://medium.com/@<%- siteConfig.social.medium %>">
-            <span class="post__title">Medium</span>
-            <span class="post__date"><%- siteConfig.social.medium %></span>
-        </a>
-
-        <a target="_blank" class="post link-twitter" href="https://twitter.com/<%- siteConfig.social.twitter %>">
-            <span class="post__title">Twitter</span>
-            <span class="post__date"><%- siteConfig.social.twitter %></span>
-        </a>
-
-        <a target="_blank" class="post link-email" href="mailto:<%- siteConfig.owner.email %>">
-            <span class="post__title">Email</span>
-            <span class="post__date"><%- siteConfig.owner.email %></span>
-        </a>
-
+        <% } %>
     </div>
 </section>
+<% } %>
 
 <%- include('_includes/footer', { siteConfig }) %>

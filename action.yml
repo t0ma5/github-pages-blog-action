@@ -1,8 +1,8 @@
 name: 'Create Blog from Markdown Files'
-description: 'This action allows you to create a blog from your markdown files and deploy to GitHub pages'
-author: 'Kamran Ahmed <kamranahmed.se@gmail.com>'
+description: 'Build a markdown blog and deploy it to GitHub Pages'
+author: 't0ma5'
 runs:
-  using: 'node16'
+  using: 'node20'
   main: 'dist/index.js'
 branding:
   icon: 'git-commit'
@@ -10,20 +10,23 @@ branding:
 inputs:
   token:
     description: >
-      This option defaults to the repository scoped GitHub Token.
-
-      However if you need more permissions for things such as deploying to another
-      repository, you can add a Personal Access Token (PAT) here. This should be
-      stored in the `secrets / with` menu **as a secret**.
+      Repository-scoped GitHub Token by default. Use a PAT for cross-repo deploy.
     required: false
     default: ${{ github.token }}
 
   branch:
-    description: 'This is the branch you wish to deploy to, for example gh-pages or docs.'
+    description: 'Branch to deploy to (for example gh-pages).'
     required: false
     default: 'gh-pages'
 
+  theme_dir:
+    description: >
+      Optional path to a custom theme directory (relative to the content repo,
+      or absolute). If omitted, uses ./theme in the content repo when present,
+      otherwise the Action's bundled theme.
+    required: false
+    default: ''
+
 outputs:
   deployment-status:
-    description: 'The status of the deployment that indicates if the run failed or passed. Possible outputs include: success|failed|skipped'
-
+    description: 'success|failed|skipped'

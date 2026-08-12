@@ -2,35 +2,41 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport"
-          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
-    <meta name="viewport"
-          content="width=device-width, user-scalable=yes, initial-scale=1.0, maximum-scale=3.0, minimum-scale=1.0">
-    <meta http-equiv="Content-Language" content="en">
-    <meta http-equiv="X-UA-Compatible" content="ie=edge">
-
-    <title><%- typeof post !== 'undefined' ? post.title : siteConfig.seo.title %></title>
-    <meta name="description" content="<%- siteConfig.seo.description %>"/>
-    <meta name="keywords" content="<%- siteConfig.seo.keywords %>"/>
-
-    <link rel="stylesheet"
-          href="https://fonts.googleapis.com/css?family=Alegreya:400,400i|Lato:400,400i,700,900|Roboto+Mono:400,300">
-    <link rel="stylesheet"
-          href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.5.1/styles/shades-of-purple.min.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.5.1/highlight.min.js"></script>
-
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="dark">
+    <title><%- typeof post !== 'undefined' ? post.title : (siteConfig.seo?.title || siteConfig.title) %></title>
+    <meta name="description" content="<%- typeof post !== 'undefined' && post.description ? post.description : (siteConfig.seo?.description || '') %>"/>
+    <% if (siteConfig.seo?.keywords?.length) { %>
+    <meta name="keywords" content="<%- siteConfig.seo.keywords.join(', ') %>"/>
+    <% } %>
+    <% const pageUrl = siteConfig.url ? (typeof post !== 'undefined' ? `${siteConfig.url}${post.permalink}.html` : `${siteConfig.url}/`) : ''; %>
+    <% if (pageUrl) { %>
+    <link rel="canonical" href="<%- pageUrl %>"/>
+    <meta property="og:url" content="<%- pageUrl %>"/>
+    <% } %>
+    <meta property="og:type" content="website"/>
+    <meta property="og:title" content="<%- typeof post !== 'undefined' ? post.title : (siteConfig.seo?.title || siteConfig.title) %>"/>
+    <meta property="og:description" content="<%- typeof post !== 'undefined' && post.description ? post.description : (siteConfig.seo?.description || '') %>"/>
+    <% if (siteConfig.url) { %>
+    <meta property="og:image" content="<%- `${siteConfig.url}${siteConfig.ogImage || '/og.png'}` %>"/>
+    <meta name="twitter:image" content="<%- `${siteConfig.url}${siteConfig.ogImage || '/og.png'}` %>"/>
+    <% } %>
+    <meta name="twitter:card" content="summary_large_image"/>
+    <meta name="twitter:title" content="<%- typeof post !== 'undefined' ? post.title : (siteConfig.seo?.title || siteConfig.title) %>"/>
+    <meta name="twitter:description" content="<%- typeof post !== 'undefined' && post.description ? post.description : (siteConfig.seo?.description || '') %>"/>
+    <link rel="icon" href="<%- siteConfig.favicon || '/favicon.svg' %>" type="image/svg+xml"/>
+    <link rel="alternate icon" href="/favicon.png"/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
     <link rel="stylesheet" href="<%- `${siteConfig.baseUrl || ''}/` %>css/normalize.css"/>
     <link rel="stylesheet" href="<%- `${siteConfig.baseUrl || ''}/` %>css/theme.css"/>
 </head>
-<body>
+<body id="top">
 <nav class="nav">
     <div class="nav__left">
         <a href="/">Home</a>
-        <a href="/about">About</a>
+        <a href="/about.html">About</a>
     </div>
-    <div class="nav__right">
-        <a target="_blank" href="https://github.com/<%- siteConfig.social.github %>" class="link-github">GitHub</a>
-        <a target="_blank" href="https://twitter.com/<%- siteConfig.social.twitter %>" class="link-twitter">Twitter</a>
-        <a href="mailto:<%- siteConfig.owner.email %>" class="link-email">Email</a>
-    </div>
+    <div class="nav__center"></div>
+    <div class="nav__right"></div>
 </nav>
